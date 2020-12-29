@@ -185,7 +185,7 @@ def display_moid_info():
     num_alive_moids = 0
     print("\nDisplaying Moid information:\n")
     
-    for i in range (0, moids.__len__()):
+    for i in range (0, len(moids)):
         if moids[i].life_status == "alive":
             total_sense_distance += moids[i].sense_distance
             num_alive_moids += 1
@@ -198,7 +198,7 @@ def display_moid_info():
 def begin_evolution_cycle(num_moves):
     for i in range(0, num_moves):
         locations = get_current_locations()
-        for e in range(0, moids.__len__()):
+        for e in range(0, len(moids)):
             if moids[e].life_status == "alive":
                 moids[e].sense(locations)
                # print(moids[e].display_info())
@@ -214,10 +214,10 @@ def begin_evolution_cycle(num_moves):
 # Creates a dictionary of locations for all food and moids that can then be printed
 def get_current_locations():
     list_locations = {}
-    for i in range(0, food.__len__()):
+    for i in range(0, len(food)):
         list_locations[food[i]] = 'food'
 
-    for i in range(0, moids.__len__()):
+    for i in range(0, len(moids)):
         if moids[i].life_status == "alive":
             list_locations[(moids[i].x, moids[i].y)] = 'moid'
 
@@ -255,7 +255,7 @@ while not exit:
         create_initial_moids(1)
     elif val == "2":
         add_food(10)
-        print("There is now " + str(food.__len__()) + " food on the map")
+        print("There is now " + str(len(food)) + " food on the map")
     elif val == "3":
         display_moid_info()      
     elif val == "4":
