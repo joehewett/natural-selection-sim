@@ -92,7 +92,7 @@ class Moid:
 
     def check_space(self, food):
         current_location = (self.x, self.y)
-        if food.__contains__(current_location): 
+        if current_location in food: 
             self.eat()
             add_food(1)
 
@@ -160,7 +160,7 @@ def add_food(num_food):
     i = 0
     while i < num_food:
         x, y = random.randint(1,20), random.randint(1,20)
-        if not food.__contains__((x, y)):
+        if (x, y) not in food:
             food.append((x, y))       
             i += 1
 
