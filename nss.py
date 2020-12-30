@@ -3,31 +3,82 @@ import random
 
 random.seed(3)
 
-class MoidMap:
+class Simulation:
 
     def __init__(self, max_x, max_y):
         self.max_x = max_x
         self.max_y = max_y
+
+        self.entities = {}
     
-    def display(self, locations = {}):
+    def do_cycles(self, num_moves):
+        for i in range(0, num_moves):
+            for location in self.entities.copy().keys():
+                entity = self.entities[location]
+                if type(entity) is Moid:
+                    if entity.life_status == "alive":
+                        entity.sense()
+
+            print("\nCurrent move: " + str(i))
+            self.display()
+
+            input()
+    
+    def add_entity(self, entity, x, y):
+        entity.set_entities(self.entities)
+        self.entities[(x,y)] = entity
+
+    def display_moids_info(self):
+        total_sense_distance = 0
+        num_alive_moids = 0
+        print("\nDisplaying Moid information:\n")
+
+        for location in self.entities.copy().keys():
+            entity = self.entities[location]
+
+            if type(entity) is Moid:
+                if entity.life_status == "alive":
+                    total_sense_distance += entity.sense_distance
+                    num_alive_moids += 1
+
+                    print(entity.display_info())
+        
+        avg_sense_distance = total_sense_distance / num_alive_moids
+        print("There are currently " + str(num_alive_moids) + " living Moids")
+        print("The average sense distance is " + str(avg_sense_distance))
+
+    def display(self):
         map_text = ""
         for y in range(1, self.max_y + 1):
             map_text += "\n"
             for x in range(1, self.max_x + 1):
                 
-                key = (x, y)
+                location = (x, y)
 
-                if key in locations.keys():
-                    if locations[key] == "food":
-                        map_text += " o"
-                    if locations[key] == "moid":
-                        map_text += " ¦"        
+                if location in self.entities.keys():  
+                    map_text += self.entities[location].get_symbol()     
                 else:
-                    map_text += " _"
-        print(map_text)
+                    map_text += " \033[94m_"
+        print(map_text + "\033[0m")
 
+class Entity:
+    def set_entities(self, entities):
+        self.entities = entities
 
-class Moid:
+    def get_symbol(self):
+        pass
+
+class Food(Entity):
+    def __init__(self, energy):
+        self.energy = energy
+    
+    def get_energy(self):
+        return self.energy
+
+    def get_symbol(self):
+        return " \033[92mo"
+
+class Moid(Entity):
 
     def __init__(self, id, x, y, energy, sense_distance):
         self.id = id
@@ -39,44 +90,51 @@ class Moid:
         self.total_moves = 0
 
         self.life_status = "alive"
-        
+
+        mutation_chance = random.random()
+        if mutation_chance > 0.5:
+            self.mutate()
+
+    def get_symbol(self):
+        return " \033[91m¦"        
 
     def display_info(self):
-
         info = ("Moid ID: " + str(self.id))
         info += (" | Energy: " + str(self.energy))
         info += (" | XY: " + "(" + str(self.x) + ", " + str(self.y) + ")")
         info += (" | Sense Distance: " + str(self.sense_distance))
         info += (" | Moves: " + str(self.total_moves))
         info += (" | Status: " + str(self.life_status))
+
         return info
 
+    def get_random_next_cords(self, x, y):
+        dx, dy = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+        return x + dx, y + dy
+
     def move(self, directed = False): 
-        
         new_x = self.x
         new_y = self.y
+
         if directed:
             if self.nearest_food[0] > self.x:
-                new_x = self.x + 1
+                new_x += 1
             elif self.nearest_food[0] < self.x:
-                new_x = self.x - 1
+                new_x -= 1
             elif self.nearest_food[1] > self.y:
-                new_y = self.y + 1
+                new_y += 1
             else:
-                new_y = self.y - 1
-            self.x = new_x
-            self.y = new_y
-            self.total_moves += 1
+                new_y -= 1
         else:
-            dx, dy = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
-            new_x = self.x + dx
-            new_y = self.y + dy
-            if (0 < new_x <= 50) and (0 < new_y <= 50):
-                self.x = new_x
-                self.y = new_y
-                self.total_moves += 1
-            else:
-                self.move(False)
+            new_x, new_y = self.get_random_next_cords(self.x, self.y)
+
+            # TODO: Change to match max_y and max_x
+            while not (0 < new_x <= 20 and 0 < new_y <= 20):
+                new_x, new_y = self.get_random_next_cords(self.x, self.y)
+
+        self.x = new_x
+        self.y = new_y
+        self.total_moves += 1
 
         self.energy -= 1
 
@@ -88,17 +146,24 @@ class Moid:
         if self.total_moves > 100:
             self.die()
 
-        self.check_space(food)
+        self.check_space(new_x, new_y)
 
-    def check_space(self, food):
-        current_location = (self.x, self.y)
-        if current_location in food: 
-            self.eat()
-            add_food(1)
+    def check_space(self, new_x, new_y):
+        new_location = (new_x, new_y)
 
-    def eat(self):
-        self.energy += 10
-        food.remove((self.x, self.y))
+        if new_location in self.entities:
+            entity = self.entities[new_location]
+
+            if type(entity) is Food: 
+                self.eat(entity, new_location)
+
+                # TODO: Stop using global variables/functions
+                add_food(1, 10, simulation)
+
+    def eat(self, food, location):
+        self.energy += food.get_energy()
+        
+        self.entities.pop(location)
 
     def mutate(self):
         change = random.choice([-1, 1])
@@ -121,34 +186,48 @@ class Moid:
             spawn_x = self.x - 1
             spawn_y = self.y - 1
         
-        create_moid(new_id, spawn_x, spawn_y, 50, self.sense_distance)
+        # TODO: Check if location is occupied
+
+        new_moid = Moid(new_id, spawn_x, spawn_y, 50, self.sense_distance)
+        new_moid.set_entities(self.entities)
+
+        self.entities[(spawn_x, spawn_y)] = new_moid
 
         self.energy -= 50
 
     def die(self):
         self.life_status = "dead"
 
-    def sense(self, locations = {}):
-        nearest_food = get_nearest_food(self.x, self.y, locations)
-        self.nearest_food = nearest_food
+    def get_nearest_food(self):
+        lowest_dist = 100
+        nearest_food = None
+
+        for location in self.entities.keys():
+            entity = self.entities[location]
+            if type(entity) is Food:
+                total_distance = get_distance(self.x, self.y, location[0], location[1])
+                
+                if total_distance < lowest_dist:
+                    lowest_dist = total_distance
+                    nearest_food = location
         
+        return nearest_food
+
+    def sense(self):
+        self.nearest_food = self.get_nearest_food()
         distance_to_food = get_distance(self.x, self.y, self.nearest_food[0], self.nearest_food[1])
+
+        old_location = (self.x, self.y)
+
         if distance_to_food <= self.sense_distance:
             self.move(True)
         else:
             self.move(False)
-        
-def get_nearest_food(x, y, locations = {}):
-    lowest_dist = 100
-    nearest_food = ""
-    for cords,entity_type in locations.items():            
-        if entity_type == "food":
-            total_distance = get_distance(x, y, cords[0], cords[1])
-            
-            if total_distance < lowest_dist:
-                lowest_dist = total_distance
-                nearest_food = cords
-    return nearest_food
+
+        self.entities.pop(old_location)
+
+        if self.life_status == "alive":
+            self.entities[(self.x, self.y)] = self 
 
 def get_distance(current_x, current_y, desired_x, desired_y):
     distance_x = abs(desired_x - current_x)
@@ -156,89 +235,31 @@ def get_distance(current_x, current_y, desired_x, desired_y):
     total_distance = distance_x + distance_y
     return total_distance
 
-def add_food(num_food):
+def add_food(num_food, energy, simulation):
     i = 0
     while i < num_food:
         x, y = random.randint(1,20), random.randint(1,20)
-        if (x, y) not in food:
-            food.append((x, y))       
+        if (x, y) not in simulation.entities:
+            simulation.add_entity(Food(10), x, y)
             i += 1
+    
+    print("\nAdding " + str(num_food) + " food with energy " + str(energy))
 
 # create some moids
-def create_initial_moids(num_moids):
+def create_moids(num_moids, simulation):
     for i in range(1, num_moids + 1):
-        create_moid((i, 0), random.randint(1,20), random.randint(1,20), 30, 3)
-    print("Creating " + str(num_moids) + " Moids")
+        x, y = random.randint(1,20), random.randint(1,20)
+        baby_moid = Moid((i, 0), x, y, 30, 3)
 
-
-def create_moid(id, x, y, energy, sense_distance):
-    baby_moid = Moid(id, x, y, energy, sense_distance)
-    mutation_chance = random.random()
-    if mutation_chance > 0.5:
-        baby_moid.mutate()
-    moids.append(baby_moid)
-
-
-# display moid information
-def display_moid_info():
-    total_sense_distance = 0
-    num_alive_moids = 0
-    print("\nDisplaying Moid information:\n")
+        simulation.add_entity(baby_moid, x, y)
     
-    for i in range (0, len(moids)):
-        if moids[i].life_status == "alive":
-            total_sense_distance += moids[i].sense_distance
-            num_alive_moids += 1
-            print(moids[i].display_info())
-    avg_sense_distance = total_sense_distance / num_alive_moids
-    print("There are currently " + str(num_alive_moids) + " living Moids")
-    print("The average sense distance is " + str(avg_sense_distance))
-
-# Begin a cycle of evolution for all currently living moids
-def begin_evolution_cycle(num_moves):
-    for i in range(0, num_moves):
-        locations = get_current_locations()
-        for e in range(0, len(moids)):
-            if moids[e].life_status == "alive":
-                moids[e].sense(locations)
-               # print(moids[e].display_info())
-
-        print("\nCurrent move: " + str(i))
-        
-        locations = get_current_locations()
-        new_map.display(locations)
-
-        input()
-    print("DONE")
-
-# Creates a dictionary of locations for all food and moids that can then be printed
-def get_current_locations():
-    list_locations = {}
-    for i in range(0, len(food)):
-        list_locations[food[i]] = 'food'
-
-    for i in range(0, len(moids)):
-        if moids[i].life_status == "alive":
-            list_locations[(moids[i].x, moids[i].y)] = 'moid'
-
-    return list_locations
-
+    print("Creating " + str(num_moids) + " Moids")
 
 print("\nMoid Natural Selection Simulation\n")
 
-# list of moid objects
-moids = []
-create_initial_moids(10)
-
-# list of food x,y tuples
-food = []
-add_food(20)
-
-locations = {}
-locations = get_current_locations()
-
-new_map = MoidMap(20, 20)
-
+simulation = Simulation(20, 20)
+add_food(100, 20, simulation)
+create_moids(5, simulation)
 
 # Begin menu display
 exit = False
@@ -252,21 +273,16 @@ while not exit:
     print("=========================================\n")
     val = input("Press a key: ")    
     if val == "1": 
-        create_initial_moids(1)
+        create_moids(1, simulation)
     elif val == "2":
-        add_food(10)
-        print("There is now " + str(len(food)) + " food on the map")
+        add_food(10, 10, simulation)
     elif val == "3":
-        display_moid_info()      
+        simulation.display_moids_info()      
     elif val == "4":
-        locations = get_current_locations()
-        new_map.display(locations)
+        simulation.display()
     elif val == "x":
         print("Beginning evolution cycle")
-        begin_evolution_cycle(100)
-    elif val == "0":
-        locations = get_current_locations()
-        moids[0].sense(locations)
+        simulation.do_cycles(100)
     elif val == "q":
         print("Exiting")
         exit = True
