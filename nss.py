@@ -1,17 +1,17 @@
 import sys
 import random
 
-random.seed(3)
-
 class Simulation:
 
-    def __init__(self, max_x, max_y):
+    def __init__(self, max_x, max_y, seed):
+        self.seed = seed
         self.max_x = max_x
         self.max_y = max_y
-
         self.entities = {}
+
+        random.seed(seed)
     
-    def do_cycles(self, num_moves):
+    def do_cycles(self, num_moves, display=True):
         for i in range(0, num_moves):
             for location in self.entities.copy().keys():
                 entity = self.entities[location]
@@ -19,10 +19,11 @@ class Simulation:
                     if entity.life_status == "alive":
                         entity.sense()
 
-            print("\nCurrent move: " + str(i))
-            self.display()
+            if display:
+                print("\nCurrent move: " + str(i))
+                self.display()
 
-            input()
+                input()
     
     def add_entity(self, entity, x, y):
         entity.set_entities(self.entities)
@@ -157,9 +158,6 @@ class Moid(Entity):
             if type(entity) is Food: 
                 self.eat(entity, new_location)
 
-                # TODO: Stop using global variables/functions
-                add_food(1, 10, simulation)
-
     def eat(self, food, location):
         self.energy += food.get_energy()
         
@@ -235,7 +233,7 @@ def get_distance(current_x, current_y, desired_x, desired_y):
     total_distance = distance_x + distance_y
     return total_distance
 
-def add_food(num_food, energy, simulation):
+def add_food(num_food, energy, simulation, verbose=False):
     i = 0
     while i < num_food:
         x, y = random.randint(1,20), random.randint(1,20)
@@ -243,49 +241,52 @@ def add_food(num_food, energy, simulation):
             simulation.add_entity(Food(10), x, y)
             i += 1
     
-    print("\nAdding " + str(num_food) + " food with energy " + str(energy))
+    if verbose:
+        print("\nAdding " + str(num_food) + " food with energy " + str(energy))
 
 # create some moids
-def create_moids(num_moids, simulation):
+def create_moids(num_moids, simulation, verbose=False):
     for i in range(1, num_moids + 1):
         x, y = random.randint(1,20), random.randint(1,20)
         baby_moid = Moid((i, 0), x, y, 30, 3)
 
         simulation.add_entity(baby_moid, x, y)
     
-    print("Creating " + str(num_moids) + " Moids")
+    if verbose:
+        print("Creating " + str(num_moids) + " Moids")
 
-print("\nMoid Natural Selection Simulation\n")
+if __name__ == '__main__':
+    print("\nMoid Natural Selection Simulation\n")
 
-simulation = Simulation(20, 20)
-add_food(100, 20, simulation)
-create_moids(5, simulation)
+    simulation = Simulation(20, 20, seed="WAI")
+    add_food(100, 20, simulation)
+    create_moids(5, simulation)
 
-# Begin menu display
-exit = False
-while not exit:
-    print("\n=========================================")
-    print("Press 1 to Add a Moid")
-    print("Press 2 to Add Food")
-    print("Press 3 to See Moid Info")
-    print("Press 4 to View Map")
-    print("Press x to Begin Evolution Cycle")
-    print("=========================================\n")
-    val = input("Press a key: ")    
-    if val == "1": 
-        create_moids(1, simulation)
-    elif val == "2":
-        add_food(10, 10, simulation)
-    elif val == "3":
-        simulation.display_moids_info()      
-    elif val == "4":
-        simulation.display()
-    elif val == "x":
-        print("Beginning evolution cycle")
-        simulation.do_cycles(100)
-    elif val == "q":
-        print("Exiting")
-        exit = True
+    # Begin menu display
+    exit = False
+    while not exit:
+        print("\n=========================================")
+        print("Press 1 to Add a Moid")
+        print("Press 2 to Add Food")
+        print("Press 3 to See Moid Info")
+        print("Press 4 to View Map")
+        print("Press x to Begin Evolution Cycle")
+        print("=========================================\n")
+        val = input("Press a key: ")    
+        if val == "1": 
+            create_moids(1, simulation, verbose=True)
+        elif val == "2":
+            add_food(10, 10, simulation, verbose=True)
+        elif val == "3":
+            simulation.display_moids_info()      
+        elif val == "4":
+            simulation.display()
+        elif val == "x":
+            print("Beginning evolution cycle")
+            simulation.do_cycles(100)
+        elif val == "q":
+            print("Exiting")
+            exit = True
 
 
 
