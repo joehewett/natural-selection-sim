@@ -1,5 +1,15 @@
 import sys
+import time
 import random
+
+class Color:
+    RESET = '\033[0m'
+    RED = '\033[91m'
+    GREEN = '\033[92m'
+    BLUE = '\033[94m'
+    CYAN = '\033[36m'
+    YELLOW = '\033[33m'
+    WHITE = '\033[37m'
 
 class Simulation:
 
@@ -20,11 +30,11 @@ class Simulation:
                         entity.sense()
 
             if display:
-                print("\nCurrent move: " + str(i))
+                print("Current move: " + str(i))
                 self.display()
 
-                input()
-    
+                time.sleep(0.2)
+        
     def add_entity(self, entity, x, y):
         entity.set_entities(self.entities)
         self.entities[(x,y)] = entity
@@ -32,7 +42,7 @@ class Simulation:
     def display_moids_info(self):
         total_sense_distance = 0
         num_alive_moids = 0
-        print("\nDisplaying Moid information:\n")
+        print(f"\n{Color.CYAN}Displaying Moid information:\n{Color.RESET}")
 
         for location in self.entities.copy().keys():
             entity = self.entities[location]
@@ -45,8 +55,11 @@ class Simulation:
                     print(entity.display_info())
         
         avg_sense_distance = total_sense_distance / num_alive_moids
-        print("There are currently " + str(num_alive_moids) + " living Moids")
-        print("The average sense distance is " + str(avg_sense_distance))
+
+        print()
+
+        print("There are currently " + Color.CYAN + str(num_alive_moids) + Color.RESET + " living Moids")
+        print("The average sense distance is " + Color.CYAN + str(avg_sense_distance) + Color.RESET)
 
     def display(self):
         map_text = ""
@@ -59,8 +72,9 @@ class Simulation:
                 if location in self.entities.keys():  
                     map_text += self.entities[location].get_symbol()     
                 else:
-                    map_text += " \033[94m_"
-        print(map_text + "\033[0m")
+                    map_text += Color.BLUE + " _"
+        
+        print(map_text + Color.RESET + "\n")
 
 class Entity:
     def set_entities(self, entities):
@@ -77,7 +91,7 @@ class Food(Entity):
         return self.energy
 
     def get_symbol(self):
-        return " \033[92mo"
+        return Color.GREEN + " o"
 
 class Moid(Entity):
 
@@ -97,7 +111,7 @@ class Moid(Entity):
             self.mutate()
 
     def get_symbol(self):
-        return " \033[91m¦"        
+        return Color.RED + " @"        
 
     def display_info(self):
         info = ("Moid ID: " + str(self.id))
@@ -256,8 +270,6 @@ def create_moids(num_moids, simulation, verbose=False):
         print("Creating " + str(num_moids) + " Moids")
 
 if __name__ == '__main__':
-    print("\nMoid Natural Selection Simulation\n")
-
     simulation = Simulation(20, 20, seed="WAI")
     add_food(100, 20, simulation)
     create_moids(5, simulation)
@@ -265,13 +277,17 @@ if __name__ == '__main__':
     # Begin menu display
     exit = False
     while not exit:
-        print("\n=========================================")
-        print("Press 1 to Add a Moid")
-        print("Press 2 to Add Food")
-        print("Press 3 to See Moid Info")
-        print("Press 4 to View Map")
-        print("Press x to Begin Evolution Cycle")
-        print("=========================================\n")
+        print("\n" + Color.BLUE + "▄" * 50 + "\n" + Color.RESET)
+
+        print(f"{Color.CYAN}Moid Natural Selection Simulation{Color.RESET}\n")
+
+        print("1) Add a Moid")
+        print("2) Add Food")
+        print("3) See Moid Info")
+        print("4) View Map")
+        print("x) Begin Evolution Cycle")
+        print("\n" + Color.BLUE + "▀" * 50 + "\n" + Color.RESET)
+
         val = input("Press a key: ")    
         if val == "1": 
             create_moids(1, simulation, verbose=True)
@@ -287,6 +303,8 @@ if __name__ == '__main__':
         elif val == "q":
             print("Exiting")
             exit = True
+        
+        input()
 
 
 
