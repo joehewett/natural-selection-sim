@@ -1,5 +1,4 @@
 import sys
-import time
 import random
 
 class Color:
@@ -30,10 +29,11 @@ class Simulation:
                         entity.sense()
 
             if display:
+                print("\033c")
                 print("Current move: " + str(i))
                 self.display()
 
-                time.sleep(0.2)
+                input()
         
     def add_entity(self, entity, x, y):
         entity.set_entities(self.entities)
