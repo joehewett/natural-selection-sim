@@ -1,5 +1,7 @@
 import sys
 import random
+import uuid
+
 
 class Color:
     RESET = '\033[0m'
@@ -10,23 +12,21 @@ class Color:
     YELLOW = '\033[33m'
     WHITE = '\033[37m'
 
+
 class Simulation:
 
     def __init__(self, max_x, max_y, seed):
         self.seed = seed
         self.max_x = max_x
         self.max_y = max_y
-        self.entities = {}
 
         random.seed(seed)
-    
+
     def do_cycles(self, num_moves, display=True):
         for i in range(0, num_moves):
-            for location in self.entities.copy().keys():
-                entity = self.entities[location]
-                if type(entity) is Moid:
-                    if entity.life_status == "alive":
-                        entity.sense()
+            for entity in Entity.entities:
+                if entity.is_active:
+                    entity.tick()
 
             if display:
                 print("\033c")
@@ -34,84 +34,128 @@ class Simulation:
                 self.display()
 
                 input()
-        
-    def add_entity(self, entity, x, y):
-        entity.set_entities(self.entities)
-        self.entities[(x,y)] = entity
 
     def display_moids_info(self):
         total_sense_distance = 0
         num_alive_moids = 0
         print(f"\n{Color.CYAN}Displaying Moid information:\n{Color.RESET}")
 
-        for location in self.entities.copy().keys():
-            entity = self.entities[location]
-
+        for entity in Entity.entities:
             if type(entity) is Moid:
-                if entity.life_status == "alive":
+                if entity.is_active:
                     total_sense_distance += entity.sense_distance
                     num_alive_moids += 1
 
                     print(entity.display_info())
-        
+
         avg_sense_distance = total_sense_distance / num_alive_moids
 
         print()
 
-        print("There are currently " + Color.CYAN + str(num_alive_moids) + Color.RESET + " living Moids")
-        print("The average sense distance is " + Color.CYAN + str(avg_sense_distance) + Color.RESET)
+        print("There are currently " + Color.CYAN +
+              str(num_alive_moids) + Color.RESET + " living Moids")
+        print("The average sense distance is " + Color.CYAN +
+              str(avg_sense_distance) + Color.RESET)
 
     def display(self):
+        entity_location = {(entity.x, entity.y): entity for entity in Entity.entities if entity.is_active}
         map_text = ""
+
         for y in range(1, self.max_y + 1):
             map_text += "\n"
             for x in range(1, self.max_x + 1):
-                
+
                 location = (x, y)
 
-                if location in self.entities.keys():  
-                    map_text += self.entities[location].get_symbol()     
+                if location in entity_location:
+                    entity = entity_location.get(location)
+                    map_text += entity.get_symbol()
                 else:
                     map_text += Color.BLUE + " _"
-        
+
         print(map_text + Color.RESET + "\n")
 
+
 class Entity:
-    def set_entities(self, entities):
-        self.entities = entities
+    entities = []
+
+    def __init__(self, x, y):
+        self.entities.append(self)
+
+        self.id = uuid.uuid4()
+        self.is_active = True
+        self.x = x
+        self.y = y
+
+    def die(self):
+        self.is_active = False
+
+    def get_location(self):
+        return (self.x, self.y)
+
+    def translate_by(self, dx, dy):
+        self.x += dx
+        self.y += dy
+
+    def manh_distance_to(self, entity):
+        target_x, target_y = entity.get_location()
+
+        return abs(self.x - target_x) + abs(self.y - target_y)
+
+    def get_closest_entity(self, of_type, max_distance=200):
+        return min([(entity, self.manh_distance_to(entity)) for entity in self.entities
+                        if type(entity) is of_type 
+                           and entity.is_active
+                           and self.manh_distance_to(entity) <= max_distance],
+                    key=lambda x: x[1], default=(None, None))
+
+    def move_close_to(self, entity):
+        target_x, target_y = entity.get_location()
+
+        if target_x > self.x:
+            self.translate_by(1, 0)
+        elif target_x < self.x:
+            self.translate_by(-1, 0)
+        elif target_y > self.y:
+            self.translate_by(0, 1)
+        else:
+            self.translate_by(0, -1)
+
+    def tick(self):
+        pass
 
     def get_symbol(self):
         pass
 
+
 class Food(Entity):
-    def __init__(self, energy):
+    def __init__(self, x, y, energy):
+        super().__init__(x, y)
+
         self.energy = energy
-    
+
     def get_energy(self):
         return self.energy
 
     def get_symbol(self):
         return Color.GREEN + " o"
 
-class Moid(Entity):
 
-    def __init__(self, id, x, y, energy, sense_distance):
-        self.id = id
-        self.x = x
-        self.y = y
+class Moid(Entity):
+    def __init__(self, generation, x, y, energy, sense_distance):
+        super().__init__(x, y)
+
+        self.generation = generation
         self.energy = energy
         self.sense_distance = sense_distance
-        self.nearest_food = ""
         self.total_moves = 0
-
-        self.life_status = "alive"
 
         mutation_chance = random.random()
         if mutation_chance > 0.5:
             self.mutate()
 
     def get_symbol(self):
-        return Color.RED + " @"        
+        return Color.RED + " @"
 
     def display_info(self):
         info = ("Moid ID: " + str(self.id))
@@ -119,63 +163,43 @@ class Moid(Entity):
         info += (" | XY: " + "(" + str(self.x) + ", " + str(self.y) + ")")
         info += (" | Sense Distance: " + str(self.sense_distance))
         info += (" | Moves: " + str(self.total_moves))
-        info += (" | Status: " + str(self.life_status))
+        info += (" | Status: " + str(self.is_active))
 
         return info
 
-    def get_random_next_cords(self, x, y):
+    def move_random(self):
         dx, dy = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
-        return x + dx, y + dy
 
-    def move(self, directed = False): 
-        new_x = self.x
-        new_y = self.y
+        while not (0 < self.x + dx <= 20 and 0 < self.y + dy <= 20):
+            dx, dy = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
 
-        if directed:
-            if self.nearest_food[0] > self.x:
-                new_x += 1
-            elif self.nearest_food[0] < self.x:
-                new_x -= 1
-            elif self.nearest_food[1] > self.y:
-                new_y += 1
-            else:
-                new_y -= 1
+        self.translate_by(dx, dy)
+
+    def tick(self, directed=False):
+        nearest_food, distance = self.get_closest_entity(Food, max_distance=self.sense_distance)
+
+        if not nearest_food:
+            self.move_random()
         else:
-            new_x, new_y = self.get_random_next_cords(self.x, self.y)
+            self.move_close_to(nearest_food)
 
-            # TODO: Change to match max_y and max_x
-            while not (0 < new_x <= 20 and 0 < new_y <= 20):
-                new_x, new_y = self.get_random_next_cords(self.x, self.y)
+            if distance == 1:
+                self.eat(nearest_food)
 
-        self.x = new_x
-        self.y = new_y
         self.total_moves += 1
-
         self.energy -= 1
 
         if self.energy <= 0:
             self.die()
         elif self.energy >= 100:
             self.reproduce()
-        
+
         if self.total_moves > 100:
             self.die()
 
-        self.check_space(new_x, new_y)
-
-    def check_space(self, new_x, new_y):
-        new_location = (new_x, new_y)
-
-        if new_location in self.entities:
-            entity = self.entities[new_location]
-
-            if type(entity) is Food: 
-                self.eat(entity, new_location)
-
-    def eat(self, food, location):
+    def eat(self, food):
         self.energy += food.get_energy()
-        
-        self.entities.pop(location)
+        food.die()
 
     def mutate(self):
         change = random.choice([-1, 1])
@@ -183,91 +207,44 @@ class Moid(Entity):
             self.sense_distance += change
 
     def reproduce(self):
-        stem_moid = str(self.id[0])
-        #generation = str(self.id[1] + 1)
-        generation = self.id[1] + 1
-        new_id = (stem_moid, generation)
+        x, y = self.get_location()
 
-        if self.y < 50:
-            spawn_y = self.y + 1
-            spawn_x = self.x
-        elif self.x < 50:
-            spawn_x = self.x + 1
-            spawn_y = self.y
-        else: 
-            spawn_x = self.x - 1
-            spawn_y = self.y - 1
-        
-        # TODO: Check if location is occupied
+        if y < 50:
+            spawn_y = y + 1
+            spawn_x = x
+        elif x < 50:
+            spawn_x = x + 1
+            spawn_y = y
+        else:
+            spawn_x = x - 1
+            spawn_y = y - 1
 
-        new_moid = Moid(new_id, spawn_x, spawn_y, 50, self.sense_distance)
-        new_moid.set_entities(self.entities)
-
-        self.entities[(spawn_x, spawn_y)] = new_moid
-
+        new_moid = Moid(self.generation + 1, spawn_x,
+                        spawn_y, 50, self.sense_distance)
         self.energy -= 50
 
-    def die(self):
-        self.life_status = "dead"
-
-    def get_nearest_food(self):
-        lowest_dist = 100
-        nearest_food = None
-
-        for location in self.entities.keys():
-            entity = self.entities[location]
-            if type(entity) is Food:
-                total_distance = get_distance(self.x, self.y, location[0], location[1])
-                
-                if total_distance < lowest_dist:
-                    lowest_dist = total_distance
-                    nearest_food = location
-        
-        return nearest_food
-
-    def sense(self):
-        self.nearest_food = self.get_nearest_food()
-        distance_to_food = get_distance(self.x, self.y, self.nearest_food[0], self.nearest_food[1])
-
-        old_location = (self.x, self.y)
-
-        if distance_to_food <= self.sense_distance:
-            self.move(True)
-        else:
-            self.move(False)
-
-        self.entities.pop(old_location)
-
-        if self.life_status == "alive":
-            self.entities[(self.x, self.y)] = self 
-
-def get_distance(current_x, current_y, desired_x, desired_y):
-    distance_x = abs(desired_x - current_x)
-    distance_y = abs(desired_y - current_y)
-    total_distance = distance_x + distance_y
-    return total_distance
 
 def add_food(num_food, energy, simulation, verbose=False):
     i = 0
     while i < num_food:
-        x, y = random.randint(1,20), random.randint(1,20)
-        if (x, y) not in simulation.entities:
-            simulation.add_entity(Food(10), x, y)
-            i += 1
-    
+        x, y = random.randint(1, 20), random.randint(1, 20)
+        Food(x, y, 10)
+        i += 1
+
     if verbose:
         print("\nAdding " + str(num_food) + " food with energy " + str(energy))
 
 # create some moids
+
+
 def create_moids(num_moids, simulation, verbose=False):
     for i in range(1, num_moids + 1):
-        x, y = random.randint(1,20), random.randint(1,20)
-        baby_moid = Moid((i, 0), x, y, 30, 3)
+        x, y = random.randint(1, 20), random.randint(1, 20)
+        Moid(0, x, y, 30, 3)
 
-        simulation.add_entity(baby_moid, x, y)
-    
     if verbose:
         print("Creating " + str(num_moids) + " Moids")
+
 
 if __name__ == '__main__':
     simulation = Simulation(20, 20, seed="WAI")
@@ -288,13 +265,13 @@ if __name__ == '__main__':
         print("x) Begin Evolution Cycle")
         print("\n" + Color.BLUE + "▀" * 50 + "\n" + Color.RESET)
 
-        val = input("Press a key: ")    
-        if val == "1": 
+        val = input("Press a key: ")
+        if val == "1":
             create_moids(1, simulation, verbose=True)
         elif val == "2":
             add_food(10, 10, simulation, verbose=True)
         elif val == "3":
-            simulation.display_moids_info()      
+            simulation.display_moids_info()
         elif val == "4":
             simulation.display()
         elif val == "x":
@@ -303,33 +280,25 @@ if __name__ == '__main__':
         elif val == "q":
             print("Exiting")
             exit = True
-        
+
         input()
 
 
-
-
-
-
-
-     
-
-# TO DO 
+# TO DO
 
 # Make moid to path to nearest food when food detected
 # Make offspring mutate their sense distance up or down on birth
 # Test and hopefully observe population sense distance change over time
-# 
-
+#
 
 
 # DONE
 # add a new moid attribute with states 0, 1, 2 (die, survive, reproduce)
-# upon beginning a cycle, begin random walk 
+# upon beginning a cycle, begin random walk
 # create a cycle routine that controls the cycles on key press
 # add check to ensure moid doesn't leave boundaries
 # Fix food map display
 # Change cycle routine to step on key press
 # each tick, check current location against the food map
 # if there is a match, call a function that deletes food from list and increases energy of moid, and changes survival state of moid
-# Create pathing algorithm 
+# Create pathing algorithm
