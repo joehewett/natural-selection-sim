@@ -112,21 +112,19 @@ class Entity:
 
         return abs(self.x - target_x) + abs(self.y - target_y)
 
-    def find_entities_distance_range(self, of_type, max_distance):
-        entities = []
+    def get_closest_entity(self, of_type, max_distance=200):
+        min_entity = None
+        min_distance = 9999999
 
         for entity in self.entities:
             if type(entity) is of_type and entity.is_active:
                 distance = self.manh_distance_to(entity)
 
-                if distance <= max_distance:
-                    entities.append((entity, distance))
-
-        return entities
-
-    def get_closest_entity(self, of_type, max_distance=200):
-        return min(self.find_entities_distance_range(of_type, max_distance),
-                    key=lambda x: x[1], default=(None, None))
+                if distance < min_distance and distance <= max_distance:
+                    min_distance = distance
+                    min_entity = entity
+        
+        return min_entity, min_distance        
 
     def move_close_to(self, entity):
         target_x, target_y = entity.get_location()
