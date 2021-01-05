@@ -38,7 +38,6 @@ class Simulation:
     def display_moids_info(self):
         total_sense_distance = 0
         num_alive_moids = 0
-        print(f"\n{Color.CYAN}Displaying Moid information:\n{Color.RESET}")
 
         for entity in Entity.entities:
             if type(entity) is Moid:
@@ -50,6 +49,8 @@ class Simulation:
 
         avg_sense_distance = total_sense_distance / num_alive_moids
 
+        print()
+        print(f"{Color.CYAN}Displaying Moid information:{Color.RESET}")
         print()
 
         print("There are currently " + Color.CYAN +
@@ -181,7 +182,7 @@ class Moid(Entity):
         info += (" | XY: " + "(" + str(self.x) + ", " + str(self.y) + ")")
         info += (" | Sense Distance: " + str(self.sense_distance))
         info += (" | Moves: " + str(self.total_moves))
-        info += (" | Status: " + str(self.is_active))
+        info += (" | Status: " + "Alive" if self.is_active else "Dead")
 
         return info
 
@@ -241,17 +242,12 @@ class Moid(Entity):
 
 
 def add_food(num_food, energy, simulation, verbose=False):
-    i = 0
-    while i < num_food:
+    for i in range(1, num_food + 1):
         x, y = random.randint(1, 20), random.randint(1, 20)
         Food(x, y, 10)
-        i += 1
 
     if verbose:
         print("\nAdding " + str(num_food) + " food with energy " + str(energy))
-
-# create some moids
-
 
 def create_moids(num_moids, simulation, verbose=False):
     for i in range(1, num_moids + 1):
@@ -259,7 +255,7 @@ def create_moids(num_moids, simulation, verbose=False):
         Moid(0, x, y, 30, 3)
 
     if verbose:
-        print("Creating " + str(num_moids) + " Moids")
+        print("Adding " + str(num_moids) + " moids")
 
 
 if __name__ == '__main__':
