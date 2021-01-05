@@ -207,17 +207,15 @@ class Moid(Entity):
             self.sense_distance += change
 
     def reproduce(self):
-        x, y = self.get_location()
-
-        if y < 50:
-            spawn_y = y + 1
-            spawn_x = x
-        elif x < 50:
-            spawn_x = x + 1
-            spawn_y = y
+        if self.y < 50:
+            spawn_y = self.y + 1
+            spawn_x = self.x
+        elif self.x < 50:
+            spawn_x = self.x + 1
+            spawn_y = self.y
         else:
-            spawn_x = x - 1
-            spawn_y = y - 1
+            spawn_x = self.x - 1
+            spawn_y = self.y - 1
 
         new_moid = Moid(self.generation + 1, spawn_x,
                         spawn_y, 50, self.sense_distance)
