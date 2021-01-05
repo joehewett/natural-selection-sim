@@ -146,10 +146,10 @@ class Entity:
 
 
 class Food(Entity):
-    def __init__(self, x, y, energy):
+    def __init__(self, x, y):
         super().__init__(x, y)
 
-        self.energy = energy
+        self.energy = 10
 
     def get_energy(self):
         return self.energy
@@ -239,13 +239,13 @@ class Moid(Entity):
         self.energy -= 50
 
 
-def add_food(num_food, energy, verbose=False):
+def add_food(num_food, verbose=False):
     for i in range(1, num_food + 1):
         x, y = random.randint(1, 20), random.randint(1, 20)
-        Food(x, y, 10)
+        Food(x, y)
 
     if verbose:
-        print("\nAdding " + str(num_food) + " food with energy " + str(energy))
+        print("\nAdding " + str(num_food) + " food")
 
 def create_moids(num_moids, verbose=False):
     for i in range(1, num_moids + 1):
@@ -258,8 +258,8 @@ def create_moids(num_moids, verbose=False):
 
 if __name__ == '__main__':
     simulation = Simulation(20, 20, seed="WAI")
-    add_food(100, 20, simulation)
-    create_moids(5, simulation)
+    add_food(100)
+    create_moids(5)
 
     # Begin menu display
     exit = False
@@ -279,7 +279,7 @@ if __name__ == '__main__':
         if val == "1":
             create_moids(1, verbose=True)
         elif val == "2":
-            add_food(10, 10, verbose=True)
+            add_food(10, verbose=True)
         elif val == "3":
             simulation.display_moids_info()
         elif val == "4":

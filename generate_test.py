@@ -13,7 +13,7 @@ def generate_test_cli():
 
     simulation = Simulation(**simulation_settings)
 
-    add_food(100, 20)
+    add_food(100)
     create_moids(5)
 
     for i in range(200):
