@@ -239,7 +239,7 @@ class Moid(Entity):
         self.energy -= 50
 
 
-def add_food(num_food, energy, simulation, verbose=False):
+def add_food(num_food, energy, verbose=False):
     for i in range(1, num_food + 1):
         x, y = random.randint(1, 20), random.randint(1, 20)
         Food(x, y, 10)
@@ -247,7 +247,7 @@ def add_food(num_food, energy, simulation, verbose=False):
     if verbose:
         print("\nAdding " + str(num_food) + " food with energy " + str(energy))
 
-def create_moids(num_moids, simulation, verbose=False):
+def create_moids(num_moids, verbose=False):
     for i in range(1, num_moids + 1):
         x, y = random.randint(1, 20), random.randint(1, 20)
         Moid(0, x, y, 30, 3)
@@ -277,9 +277,9 @@ if __name__ == '__main__':
 
         val = input("Press a key: ")
         if val == "1":
-            create_moids(1, simulation, verbose=True)
+            create_moids(1, verbose=True)
         elif val == "2":
-            add_food(10, 10, simulation, verbose=True)
+            add_food(10, 10, verbose=True)
         elif val == "3":
             simulation.display_moids_info()
         elif val == "4":

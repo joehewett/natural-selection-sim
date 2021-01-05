@@ -9,8 +9,8 @@ def run_test(name, test):
     print(f'Running test {name} with {len(entities_cycles)} cycles.')
 
     simulation = Simulation(**simulation_settings)
-    add_food(100, 20, simulation)
-    create_moids(5, simulation)
+    add_food(100, 20)
+    create_moids(5)
 
     for i in range(len(entities_cycles)):
         simulation.do_cycles(1, False)
