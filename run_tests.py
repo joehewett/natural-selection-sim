@@ -1,6 +1,6 @@
 import json
 from os import walk, path
-from nss import Simulation, add_food, create_moids
+from nss import Simulation, Entity, add_food, create_moids
 
 def run_test(name, test):
     simulation_settings = test['simulation_settings']
@@ -15,21 +15,20 @@ def run_test(name, test):
     for i in range(len(entities_cycles)):
         simulation.do_cycles(1, False)
 
-        assert verify_cycle(simulation.entities, entities_cycles[i]), f'\033[91mFailed cycle in test {name}!\033[0m'
+        assert verify_cycle(Entity.entities, entities_cycles[i]), f'\033[91mFailed cycle {i} in test {name}!\033[0m'
     
     print(f'Code passed test {name}!')
 
+def get_entity_info(entity):
+    return {
+        'x': entity.x,
+        'y': entity.y,
+        'type': str(type(entity))
+    }
+
 def verify_cycle(entities, test_cycle):
-    passed = False
-
-    for location, entity in entities.items():
-        passed = {
-            'x': location[0],
-            'y': location[1],
-            'type': str(type(entity))
-        } in test_cycle
-
-    return len(entities) == len(test_cycle) and passed
+    active_entities = filter(lambda e: e.is_active, entities)
+    return all((e in test_cycle) for e in list(map(get_entity_info, active_entities)))
 
 def read_test(file_path):
     data = None

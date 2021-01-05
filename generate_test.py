@@ -1,6 +1,6 @@
 import json
 import os
-from nss import Simulation, add_food, create_moids
+from nss import Simulation, Entity, add_food, create_moids
 
 def generate_test_cli():
     name = input('Please enter the test name: ')
@@ -18,7 +18,7 @@ def generate_test_cli():
 
     for i in range(200):
         simulation.do_cycles(1, False)
-        entities_cycles.append(serialize_entities(simulation.entities))
+        entities_cycles.append(serialize_entities(Entity.entities))
 
     test = {'simulation_settings': simulation_settings, 'entities_cycles': entities_cycles}
     save_test(name, test)
@@ -26,10 +26,10 @@ def generate_test_cli():
 def serialize_entities(entities):
     serialized = []
 
-    for location, entity in entities.items():
+    for entity in entities:
         serialized.append({
-            'x': location[0],
-            'y': location[1],
+            'x': entity.x,
+            'y': entity.y,
             'type': str(type(entity))
         })
 
