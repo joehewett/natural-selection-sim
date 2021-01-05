@@ -57,8 +57,17 @@ class Simulation:
         print("The average sense distance is " + Color.CYAN +
               str(avg_sense_distance) + Color.RESET)
 
+    def build_entity_location_dict(self):
+        entities = {}
+
+        for entity in Entity.entities:
+            if entity.is_active:
+                entities[entity.get_location()] = entity
+        
+        return entities
+
     def display(self):
-        entity_location = {(entity.x, entity.y): entity for entity in Entity.entities if entity.is_active}
+        entity_location = self.build_entity_location_dict()
         map_text = ""
 
         for y in range(1, self.max_y + 1):
@@ -102,11 +111,20 @@ class Entity:
 
         return abs(self.x - target_x) + abs(self.y - target_y)
 
+    def find_entities_distance_range(self, of_type, max_distance):
+        entities = []
+
+        for entity in self.entities:
+            if type(entity) is of_type and entity.is_active:
+                distance = self.manh_distance_to(entity)
+
+                if distance <= max_distance:
+                    entities.append((entity, distance))
+
+        return entities
+
     def get_closest_entity(self, of_type, max_distance=200):
-        return min([(entity, self.manh_distance_to(entity)) for entity in self.entities
-                        if type(entity) is of_type 
-                           and entity.is_active
-                           and self.manh_distance_to(entity) <= max_distance],
+        return min(self.find_entities_distance_range(of_type, max_distance),
                     key=lambda x: x[1], default=(None, None))
 
     def move_close_to(self, entity):
